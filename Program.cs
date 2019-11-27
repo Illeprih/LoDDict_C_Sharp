@@ -9,6 +9,7 @@ namespace LoDDict_csharp
             string cwd = System.IO.Directory.GetCurrentDirectory();
             var LoDDict = new LoDDict();
             Console.WriteLine(LoDDict.StatList[134].Name);          //Name of ID 134 (Hellena Warden)
+            Console.WriteLine(LoDDict.StatList[134].Drop_Item);     //Drop of ID 134 (Hellena Warden) (None)
             Console.WriteLine(LoDDict.Num2Item[202]);               //Name of item ID 202 (Healing Potion)
             Console.WriteLine(LoDDict.Item2Num["Healing Potion"]);  //ID of Healing Potion (202)
             Console.WriteLine(LoDDict.Element2Num["Dark"]);         //Value of element Dark (4)
