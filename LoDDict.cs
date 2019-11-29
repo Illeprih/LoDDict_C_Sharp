@@ -70,6 +70,20 @@ namespace LoDDict_csharp
         public LoDDict()
         {
             string cwd = System.AppDomain.CurrentDomain.BaseDirectory;
+            string[] lines = File.ReadAllLines(cwd + "/Mods/Base/Item_List.txt");
+            var i = 0;
+            foreach (string row in lines)
+            {
+                if (i > 0)
+                {
+                    if (row != "")
+                    {
+                        item2num.Add(row, i - 1);
+                        num2item.Add(i - 1, row);
+                    }
+                }
+                i++;
+            }
             using var monsterData = new StreamReader(cwd + "/Mods/Base/Monster_Data.csv");
             bool firstline = true;
             while (!monsterData.EndOfStream)
@@ -78,7 +92,7 @@ namespace LoDDict_csharp
                 if (firstline == false)
                 {
                     var values = line.Split(",");
-                    statList.Add(Int32.Parse(values[0]), new StatList(values));
+                    statList.Add(Int32.Parse(values[0]), new StatList(values, element2num, item2num));
                 }
                 else
                 {
@@ -87,7 +101,7 @@ namespace LoDDict_csharp
             }
             using var dragoon = new StreamReader(cwd + "/Mods/Base/Dragoon_Stats.csv");
             firstline = true;
-            var i = 0;
+            i = 0;
             while (!dragoon.EndOfStream)
             {
                 var line = dragoon.ReadLine();
@@ -108,20 +122,6 @@ namespace LoDDict_csharp
                 }
                 i++;
             }
-            string[] lines = File.ReadAllLines(cwd + "/Mods/Base/Item_List.txt");
-            i = 0;
-            foreach (string row in lines)
-            {
-                if (i > 0)
-                {
-                    if (row != "")
-                    {
-                        item2num.Add(row, i - 1);
-                        num2item.Add(i - 1, row);
-                    }
-                }
-                i++;
-            }
         }
 
         public LoDDict(string path)
@@ -134,7 +134,7 @@ namespace LoDDict_csharp
                 if (firstline == false)
                 {
                     var values = line.Split(",");
-                    statList.Add(Int32.Parse(values[0]), new StatList(values));
+                    statList.Add(Int32.Parse(values[0]), new StatList(values, element2num, item2num));
                 }
                 else
                 {

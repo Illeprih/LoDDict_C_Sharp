@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace LoDDict_csharp
 {
     public class StatList
     {
         string name = "Monster";
-        string element = "Fire";
+        int element = 128;
         int hp = 0;
         int at = 0;
         int mat = 0;
@@ -18,13 +19,13 @@ namespace LoDDict_csharp
         int m_immune = 0;
         int p_half = 0;
         int m_half = 0;
-        string e_immune = "None";
-        string e_half = "None";
+        int e_immune = 0;
+        int e_half = 0;
         int status_res = 0;
         int death_res = 0;
         int exp = 0;
         int gold = 0;
-        string drop_item = "None";
+        int drop_item = 255;
         int drop_chance = 0;
 
 
@@ -33,7 +34,7 @@ namespace LoDDict_csharp
             get { return name; }
         }
 
-        public string Element
+        public int Element
         {
             get { return element; }
         }
@@ -98,12 +99,12 @@ namespace LoDDict_csharp
             get { return m_half; }
         }
 
-        public string E_Immune
+        public int E_Immune
         {
             get { return e_immune; }
         }
 
-        public string E_Half
+        public int E_Half
         {
             get { return e_half; }
         }
@@ -128,7 +129,7 @@ namespace LoDDict_csharp
             get { return gold; }
         }
 
-        public string Drop_Item
+        public int Drop_Item
         {
             get { return drop_item; }
         }
@@ -138,10 +139,10 @@ namespace LoDDict_csharp
             get { return drop_chance; }
         }
 
-        public StatList(string[] monster)
+        public StatList(string[] monster, IDictionary<string, int> element2num, IDictionary<string, int> item2num)
         {
             name = monster[1];
-            element = monster[2];
+            element = element2num[monster[2]];
             hp = Int32.Parse(monster[3]);
             at = Int32.Parse(monster[4]);
             mat = Int32.Parse(monster[5]);
@@ -154,13 +155,13 @@ namespace LoDDict_csharp
             m_immune = Int32.Parse(monster[12]);
             p_half = Int32.Parse(monster[13]);
             m_half = Int32.Parse(monster[14]);
-            e_immune = monster[15];
-            e_half = monster[16];
+            e_immune = element2num[monster[15]];
+            e_half = element2num[monster[16]];
             status_res = Int32.Parse(monster[17]);
             death_res = Int32.Parse(monster[18]);
             exp = Int32.Parse(monster[19]);
             gold = Int32.Parse(monster[20]);
-            drop_item = monster[21];
+            drop_item = item2num[monster[21]];
             drop_chance = Int32.Parse(monster[22]);
         }
     }
