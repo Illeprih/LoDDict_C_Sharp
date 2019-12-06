@@ -56,7 +56,8 @@ public class BattleCTRL
             Constants.WriteOutput("Finished loading.");
             var battle = new Battle(emulator);
             Constants.WriteDebug("M_Point:        " + Convert.ToString(battle.m_point, 16).ToUpper());
-            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "HP", emulator));
+            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "HP"));
+            Constants.WriteDebug("Monster 1 Element:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "Element"));
         }
         else
         {
@@ -130,23 +131,34 @@ public class Battle
 
     public class MonsterAddress
     {
-        public int hp = 0;
-        public int max_hp = 0;
-        public int element = 0;
-        public int display_element = 0;
-        public int atk = 0;
-        public int og_atk = 0;
-        public int mat = 0;
-        public int og_mat = 0;
-        public int def = 0;
-        public int og_def = 0;
-        public int mdef = 0;
-        public int og_mdef = 0;
+        int hp = 0;
+        int max_hp = 0;
+        int element = 0;
+        int display_element = 0;
+        int atk = 0;
+        int og_atk = 0;
+        int mat = 0;
+        int og_mat = 0;
+        int def = 0;
+        int og_def = 0;
+        int mdef = 0;
+        int og_mdef = 0;
+        public Emulator emulator = null;
 
-        public int HP
-        {
-            get { return hp; }
-        }
+        public int HP { get { return hp; } }
+        public int Max_HP { get { return max_hp; } }
+        public int Element { get { return element; } }
+        public int Display_Element { get { return display_element; } }
+        public int ATK { get { return atk; } }
+        public int OG_ATK { get { return og_atk; } }
+        public int MAT { get { return mat; } }
+        public int OG_MAT { get { return og_mat; } }
+        public int DEF { get { return def; } }
+        public int OG_DEF { get { return og_def; } }
+        public int MDEF { get { return mdef; } }
+        public int OG_MDEF { get { return og_mdef; } }
+
+
 
         public MonsterAddress(int m_point, int monster, Emulator emu)
         {
@@ -165,9 +177,9 @@ public class Battle
             og_mdef = m_point + 0x60 - monster * 0x388;
         }
 
-        public int ReadAddress(dynamic self, string attribute, Emulator emulator)
+        public int ReadAddress(dynamic self, string attribute)
         {
-            return emulator.ReadShortU(this.GetType().GetProperty(attribute).GetValue(self, null));
+            return this.emulator.ReadShortU(this.GetType().GetProperty(attribute).GetValue(self, null));
         }
             
     }
