@@ -1,0 +1,182 @@
+﻿using Dragoon_Modifier;
+using System;
+using System.Threading;
+using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using Microsoft.CSharp;
+using System.Globalization;
+using System.Reflection;
+using System.Xml;
+
+public class BattleCTRL
+{
+    public static void Run(Emulator emulator)
+    {
+        int encounterValue = emulator.ReadShort(Constants.GetAddress("BATTLE_VALUE"));
+        if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215)
+        {
+            Constants.WriteOutput("Battle detected. Loading...");
+            Globals.C_POINT = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                Globals.MONSTER_IDS[i] = 32767;
+            }
+            Thread.Sleep(3000);
+            Globals.MONSTER_SIZE = emulator.ReadByte(Constants.GetAddress("MONSTER_SIZE"));
+            Globals.UNIQUE_MONSTERS = emulator.ReadByte(Constants.GetAddress("UNIQUE_MONSTERS"));
+
+            if (Constants.REGION == Region.USA)
+            {
+                Globals.M_POINT = 0x1A439C + emulator.ReadShort(Constants.GetAddress("M_POINT"));
+            }
+            else
+            {
+                Globals.M_POINT = 0x1A43B4 + emulator.ReadShort(Constants.GetAddress("M_POINT"));
+            }
+
+            Globals.C_POINT = (int)(emulator.ReadInteger(Constants.GetAddress("C_POINT")) - 0x7F5A8558 - (uint)Constants.OFFSET);
+            for (int i = 0; i < Globals.MONSTER_SIZE; i++)
+            {
+                Globals.MONSTER_IDS[i] = emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (i * 0x8));
+            }
+            Globals.STATS_CHANGED = true;
+
+            Constants.WriteDebug("Monster Size:      " + Globals.MONSTER_SIZE);
+            Constants.WriteDebug("Unique Monsters:   " + Globals.UNIQUE_MONSTERS);
+            Constants.WriteDebug("Monster Point:     " + Convert.ToString(Globals.M_POINT + Constants.OFFSET, 16).ToUpper());
+            Constants.WriteDebug("Character Point:   " + Convert.ToString(Globals.C_POINT + Constants.OFFSET, 16).ToUpper());
+            Constants.WriteDebug("Monster HP:        " + emulator.ReadShort(Globals.M_POINT));
+            Constants.WriteDebug("Character HP:      " + emulator.ReadShort(Globals.C_POINT));
+            for (int i = 0; i < Globals.MONSTER_SIZE; i++)
+            {
+                Constants.WriteDebug("Monster ID Slot " + (i + 1) + ": " + Globals.MONSTER_IDS[i]);
+            }
+            Constants.WriteOutput("Finished loading.");
+            var battle = new Battle(emulator);
+            Constants.WriteDebug("M_Point:        " + Convert.ToString(battle.m_point, 16).ToUpper());
+            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "HP", emulator));
+        }
+        else
+        {
+            if (Globals.STATS_CHANGED && encounterValue < 9999)
+            {
+                Globals.STATS_CHANGED = false;
+                Constants.WriteOutput("Exiting out of battle.");
+            }
+        }
+    }
+
+    public static int GetOffset()
+    {
+        int[] discOffset = { 0xDB0, 0x0, 0x1458, 0x1B0 };
+        int[] charOffset = { 0x0, 0x180, -0x180, 0x420, 0x540, 0x180, 0x350, 0x2F0, -0x180 };
+        int partyOffset = 0;
+        if (Globals.PARTY_SLOT[0] < 9 && Globals.PARTY_SLOT[1] < 9 && Globals.PARTY_SLOT[2] < 9)
+        {
+            partyOffset = charOffset[Globals.PARTY_SLOT[1]] + charOffset[Globals.PARTY_SLOT[2]];
+        }
+        return discOffset[Globals.DISC - 1] - partyOffset;
+    }
+
+    public static void Open(Emulator emulator) { }
+    public static void Close(Emulator emulator) { }
+    public static void Click(Emulator emulator) { }
+}
+
+public class Battle
+{
+    public int encounter_ID = 0;
+    public int m_point = 0x0;
+    public int c_point = 0x0;
+    public int monster_size = 1;
+    public int unique_monster_size = 1;
+    public int[] monster_ID_list = new int[5];
+    public int[] monster_unique_ID_list = new int[3];
+    public dynamic[] monster_address_list = new dynamic[5];
+
+    public Battle(Emulator emulator)
+    {
+        if (Constants.REGION == Region.USA)
+        {
+            m_point = 0x1A439C + emulator.ReadShort(Constants.GetAddress("M_POINT")) + (int)Constants.OFFSET;
+        }
+        else
+        {
+            m_point = 0x1A43B4 + emulator.ReadShort(Constants.GetAddress("M_POINT")) + (int)Constants.OFFSET;
+        }
+        c_point = (int)(emulator.ReadInteger(Constants.GetAddress("C_POINT")) - 0x7F5A8558);
+        monster_size = emulator.ReadByte(Constants.GetAddress("MONSTER_SIZE"));
+        foreach (int monster in Enumerable.Range(0, monster_size))
+        {
+            monster_ID_list[monster] = emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (monster * 0x8));
+            monster_address_list[monster] = new MonsterAddress(m_point, monster, emulator);
+        }
+
+    }
+
+    public static int GetOffset()
+    {
+        int[] discOffset = { 0xD80, 0x0, 0x1458, 0x1B0 };
+        int[] charOffset = { 0x0, 0x180, -0x180, 0x420, 0x540, 0x180, 0x350, 0x2F0, -0x180 };
+        int partyOffset = 0;
+        if (Globals.PARTY_SLOT[0] < 9 && Globals.PARTY_SLOT[1] < 9 && Globals.PARTY_SLOT[2] < 9)
+        {
+            partyOffset = charOffset[Globals.PARTY_SLOT[1]] + charOffset[Globals.PARTY_SLOT[2]];
+        }
+        return discOffset[Globals.DISC - 1] - partyOffset;
+    }
+
+    public class MonsterAddress
+    {
+        public int hp = 0;
+        public int max_hp = 0;
+        public int element = 0;
+        public int display_element = 0;
+        public int atk = 0;
+        public int og_atk = 0;
+        public int mat = 0;
+        public int og_mat = 0;
+        public int def = 0;
+        public int og_def = 0;
+        public int mdef = 0;
+        public int og_mdef = 0;
+
+        public int HP
+        {
+            get { return hp; }
+        }
+
+        public MonsterAddress(int m_point, int monster, Emulator emu)
+        {
+            emulator = emu;
+            hp = m_point - monster * 0x388;
+            max_hp = m_point + 0x8 - monster * 0x388;
+            element = m_point + 0x6a - monster * 0x388;
+            display_element = m_point + 0x14 - monster * 0x388;
+            atk = m_point + 0x2c - monster * 0x388;
+            og_atk = m_point + 0x58 - monster * 0x388;
+            mat = m_point + 0x2E - monster * 0x388;
+            og_mat = m_point + 0x5A - monster * 0x388;
+            def = m_point + 0x30 - monster * 0x388;
+            og_def = m_point + 0x5E - monster * 0x388;
+            mdef = m_point + 0x32 - monster * 0x388;
+            og_mdef = m_point + 0x60 - monster * 0x388;
+        }
+
+        public int ReadAddress(dynamic self, string attribute, Emulator emulator)
+        {
+            return emulator.ReadShortU(this.GetType().GetProperty(attribute).GetValue(self, null));
+        }
+            
+    }
+    
+
+
+}
+
+
+
+
+
