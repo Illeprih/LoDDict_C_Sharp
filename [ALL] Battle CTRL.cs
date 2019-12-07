@@ -57,6 +57,15 @@ public class BattleCTRL
             var battle = new Battle(emulator);
             Constants.WriteDebug("M_Point:        " + Convert.ToString(battle.m_point, 16).ToUpper());
             Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress("HP"));
+            battle.monster_address_list[0].WriteAddress("HP", 10);
+            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress("HP"));
+            /* when BATTLE is in globals "public static dynamic BATTLE = new System.Dynamic.ExpandoObject();"
+            Globals.BATTLE = new Battle(emulator);
+            Constants.WriteDebug("M_Point:        " + Convert.ToString(Globals.BATTLE.m_point, 16).ToUpper());
+            Constants.WriteDebug("Monster 1 HP:        " + Globals.BATTLE.monster_address_list[0].ReadAddress("HP"));
+            Globals.BATTLE.monster_address_list[0].WriteAddress("HP", 10);
+            Constants.WriteDebug("Monster 1 HP:        " + Globals.BATTLE.monster_address_list[0].ReadAddress("HP"));
+             */
         }
         else
         {
@@ -113,7 +122,6 @@ public class Battle
             monster_ID_list[monster] = emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (monster * 0x8));
             monster_address_list[monster] = new MonsterAddress(m_point, monster, emulator);
         }
-
     }
 
     public static int GetOffset()
@@ -128,67 +136,79 @@ public class Battle
         return discOffset[Globals.DISC - 1] - partyOffset;
     }
 
-
     public class MonsterAddress
     {
-        int hp = 0;
-        int max_hp = 0;
-        int element = 0;
-        int display_element = 0;
-        int atk = 0;
-        int og_atk = 0;
-        int mat = 0;
-        int og_mat = 0;
-        int def = 0;
-        int og_def = 0;
-        int mdef = 0;
-        int og_mdef = 0;
+        int[] hp = { 0, 2 };
+        int[] max_hp = { 0, 2 };
+        int[] element = { 0, 2 };
+        int[] display_element = { 0, 2 };
+        int[] atk = { 0, 2 };
+        int[] og_atk = { 0, 2 };
+        int[] mat = { 0, 2 };
+        int[] og_mat = { 0, 2 };
+        int[] def = { 0, 2 };
+        int[] og_def = { 0, 2 };
+        int[] mdef = { 0, 2 };
+        int[] og_mdef = { 0, 2 };
         public Emulator emulator = null;
 
-        public int HP { get { return hp; } }
-        public int Max_HP { get { return max_hp; } }
-        public int Element { get { return element; } }
-        public int Display_Element { get { return display_element; } }
-        public int ATK { get { return atk; } }
-        public int OG_ATK { get { return og_atk; } }
-        public int MAT { get { return mat; } }
-        public int OG_MAT { get { return og_mat; } }
-        public int DEF { get { return def; } }
-        public int OG_DEF { get { return og_def; } }
-        public int MDEF { get { return mdef; } }
-        public int OG_MDEF { get { return og_mdef; } }
-
-
+        public int[] HP { get { return hp; } }
+        public int[] Max_HP { get { return max_hp; } }
+        public int[] Element { get { return element; } }
+        public int[] Display_Element { get { return display_element; } }
+        public int[] ATK { get { return atk; } }
+        public int[] OG_ATK { get { return og_atk; } }
+        public int[] MAT { get { return mat; } }
+        public int[] OG_MAT { get { return og_mat; } }
+        public int[] DEF { get { return def; } }
+        public int[] OG_DEF { get { return og_def; } }
+        public int[] MDEF { get { return mdef; } }
+        public int[] OG_MDEF { get { return og_mdef; } }
 
         public MonsterAddress(int m_point, int monster, Emulator emu)
         {
             emulator = emu;
-            hp = m_point - monster * 0x388;
-            max_hp = m_point + 0x8 - monster * 0x388;
-            element = m_point + 0x6a - monster * 0x388;
-            display_element = m_point + 0x14 - monster * 0x388;
-            atk = m_point + 0x2c - monster * 0x388;
-            og_atk = m_point + 0x58 - monster * 0x388;
-            mat = m_point + 0x2E - monster * 0x388;
-            og_mat = m_point + 0x5A - monster * 0x388;
-            def = m_point + 0x30 - monster * 0x388;
-            og_def = m_point + 0x5E - monster * 0x388;
-            mdef = m_point + 0x32 - monster * 0x388;
-            og_mdef = m_point + 0x60 - monster * 0x388;
+            hp[0] = m_point - monster * 0x388;
+            max_hp[0] = m_point + 0x8 - monster * 0x388;
+            element[0] = m_point + 0x6a - monster * 0x388;
+            display_element[0] = m_point + 0x14 - monster * 0x388;
+            atk[0] = m_point + 0x2c - monster * 0x388;
+            og_atk[0] = m_point + 0x58 - monster * 0x388;
+            mat[0] = m_point + 0x2E - monster * 0x388;
+            og_mat[0] = m_point + 0x5A - monster * 0x388;
+            def[0] = m_point + 0x30 - monster * 0x388;
+            og_def[0] = m_point + 0x5E - monster * 0x388;
+            mdef[0] = m_point + 0x32 - monster * 0x388;
+            og_mdef[0] = m_point + 0x60 - monster * 0x388;
         }
 
         public int ReadAddress(string attribute)
         {
             PropertyInfo property = GetType().GetProperty(attribute);
-            return this.emulator.ReadShortU((int)property.GetValue(this, null));
+            var address = (int[]) property.GetValue(this, null);
+            if (address[1] == 2)
+            {
+                return this.emulator.ReadShortU(address[0]);
+            }
+            else
+            {
+                return (int) this.emulator.ReadByteU(address[0]);
+            }
+        }
+
+        public void WriteAddress(string attribute, int value)
+        {
+            PropertyInfo property = GetType().GetProperty(attribute);
+            var address = (int[])property.GetValue(this, null);
+            if (address[1] == 2)
+            {
+                this.emulator.WriteShortU(address[0], (ushort)value);
+            }
+            else
+            {
+                this.emulator.WriteByteU(address[0], (byte)value);
+            }
+
         }
     }
-    
-
-
 }
-
-
-
-
-
