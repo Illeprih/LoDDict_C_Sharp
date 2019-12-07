@@ -56,8 +56,7 @@ public class BattleCTRL
             Constants.WriteOutput("Finished loading.");
             var battle = new Battle(emulator);
             Constants.WriteDebug("M_Point:        " + Convert.ToString(battle.m_point, 16).ToUpper());
-            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "HP"));
-            Constants.WriteDebug("Monster 1 Element:        " + battle.monster_address_list[0].ReadAddress(battle.monster_address_list[0], "Element"));
+            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress("HP"));
         }
         else
         {
@@ -129,6 +128,7 @@ public class Battle
         return discOffset[Globals.DISC - 1] - partyOffset;
     }
 
+
     public class MonsterAddress
     {
         int hp = 0;
@@ -177,11 +177,11 @@ public class Battle
             og_mdef = m_point + 0x60 - monster * 0x388;
         }
 
-        public int ReadAddress(dynamic self, string attribute)
+        public int ReadAddress(string attribute)
         {
-            return this.emulator.ReadShortU(this.GetType().GetProperty(attribute).GetValue(self, null));
+            PropertyInfo property = GetType().GetProperty(attribute);
+            return this.emulator.ReadShortU((int)property.GetValue(this, null));
         }
-            
     }
     
 
