@@ -8,7 +8,6 @@ using System.IO;
 using Microsoft.CSharp;
 using System.Globalization;
 using System.Reflection;
-using System.Xml;
 
 public class BattleCTRL
 {
@@ -18,54 +17,20 @@ public class BattleCTRL
         if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215)
         {
             Constants.WriteOutput("Battle detected. Loading...");
-            Globals.C_POINT = 0;
-            for (int i = 0; i < 5; i++)
-            {
-                Globals.MONSTER_IDS[i] = 32767;
-            }
-            Thread.Sleep(3000);
-            Globals.MONSTER_SIZE = emulator.ReadByte(Constants.GetAddress("MONSTER_SIZE"));
-            Globals.UNIQUE_MONSTERS = emulator.ReadByte(Constants.GetAddress("UNIQUE_MONSTERS"));
-
-            if (Constants.REGION == Region.USA)
-            {
-                Globals.M_POINT = 0x1A439C + emulator.ReadShort(Constants.GetAddress("M_POINT"));
-            }
-            else
-            {
-                Globals.M_POINT = 0x1A43B4 + emulator.ReadShort(Constants.GetAddress("M_POINT"));
-            }
-
-            Globals.C_POINT = (int)(emulator.ReadInteger(Constants.GetAddress("C_POINT")) - 0x7F5A8558 - (uint)Constants.OFFSET);
-            for (int i = 0; i < Globals.MONSTER_SIZE; i++)
-            {
-                Globals.MONSTER_IDS[i] = emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (i * 0x8));
-            }
-            Globals.STATS_CHANGED = true;
-
-            Constants.WriteDebug("Monster Size:      " + Globals.MONSTER_SIZE);
-            Constants.WriteDebug("Unique Monsters:   " + Globals.UNIQUE_MONSTERS);
-            Constants.WriteDebug("Monster Point:     " + Convert.ToString(Globals.M_POINT + Constants.OFFSET, 16).ToUpper());
-            Constants.WriteDebug("Character Point:   " + Convert.ToString(Globals.C_POINT + Constants.OFFSET, 16).ToUpper());
-            Constants.WriteDebug("Monster HP:        " + emulator.ReadShort(Globals.M_POINT));
-            Constants.WriteDebug("Character HP:      " + emulator.ReadShort(Globals.C_POINT));
-            for (int i = 0; i < Globals.MONSTER_SIZE; i++)
-            {
-                Constants.WriteDebug("Monster ID Slot " + (i + 1) + ": " + Globals.MONSTER_IDS[i]);
-            }
-            Constants.WriteOutput("Finished loading.");
-            var battle = new Battle(emulator);
-            Constants.WriteDebug("M_Point:        " + Convert.ToString(battle.m_point, 16).ToUpper());
-            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress("HP"));
-            battle.monster_address_list[0].WriteAddress("HP", 10);
-            Constants.WriteDebug("Monster 1 HP:        " + battle.monster_address_list[0].ReadAddress("HP"));
-            /* when BATTLE is in globals "public static dynamic BATTLE = new System.Dynamic.ExpandoObject();"
             Globals.BATTLE = new Battle(emulator);
             Constants.WriteDebug("M_Point:        " + Convert.ToString(Globals.BATTLE.m_point, 16).ToUpper());
+            Constants.WriteDebug("C_Point:        " + Convert.ToString(Globals.BATTLE.c_point, 16).ToUpper());
+            Constants.WriteDebug("Monster Size:        " + Globals.BATTLE.monster_size);
+            Constants.WriteDebug("Monster IDs:        " + String.Join(", ", Globals.BATTLE.monster_ID_list.ToArray()));
+            Constants.WriteDebug("Unique Monster Size:        " + Globals.BATTLE.unique_monster_size);
+            Constants.WriteDebug("Unique Monster IDs:        " + String.Join(", ", Globals.BATTLE.monster_unique_ID_list.ToArray()));
             Constants.WriteDebug("Monster 1 HP:        " + Globals.BATTLE.monster_address_list[0].ReadAddress("HP"));
-            Globals.BATTLE.monster_address_list[0].WriteAddress("HP", 10);
-            Constants.WriteDebug("Monster 1 HP:        " + Globals.BATTLE.monster_address_list[0].ReadAddress("HP"));
-             */
+            Constants.WriteDebug("Monster 1 EXP:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("EXP"), 10));
+            Constants.WriteDebug("Monster 1 Gold:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Gold"), 10));
+            Constants.WriteDebug("Monster 1 Drop:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Drop_Item"), 10));
+            Constants.WriteDebug("Monster 1 Drop Chance:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Drop_Chance"), 10));
+            Globals.STATS_CHANGED = true;
+            Constants.WriteOutput("Finished loading.");
         }
         else
         {
@@ -89,12 +54,15 @@ public class BattleCTRL
         return discOffset[Globals.DISC - 1] - partyOffset;
     }
 
-    public static void Open(Emulator emulator) 
+    public static void Open(Emulator emulator)
     {
-        var dictionary = new LoDDict();
+        Globals.DICTIONARY = new LoDDict();
     }
     public static void Close(Emulator emulator) { }
-    public static void Click(Emulator emulator) { }
+    public static void Click(Emulator emulator)
+    {
+        Globals.DICTIONARY = new LoDDict();
+    }
 }
 
 public class Battle
@@ -104,8 +72,8 @@ public class Battle
     public int c_point = 0x0;
     public int monster_size = 1;
     public int unique_monster_size = 1;
-    public int[] monster_ID_list = new int[5];
-    public int[] monster_unique_ID_list = new int[3];
+    public List<int> monster_ID_list = new List<int>();
+    public List<int> monster_unique_ID_list = new List<int>();
     public dynamic[] monster_address_list = new dynamic[5];
 
     public Battle(Emulator emulator)
@@ -119,11 +87,17 @@ public class Battle
             m_point = 0x1A43B4 + emulator.ReadShort(Constants.GetAddress("M_POINT")) + (int)Constants.OFFSET;
         }
         c_point = (int)(emulator.ReadInteger(Constants.GetAddress("C_POINT")) - 0x7F5A8558);
+        Thread.Sleep(1000);
+        unique_monster_size = emulator.ReadByte(Constants.GetAddress("UNIQUE_MONSTERS"));
+        foreach (int monster in Enumerable.Range(0, unique_monster_size))
+        {
+            monster_unique_ID_list.Add(emulator.ReadShort(Constants.GetAddress("UNIQUE_SLOT") + (monster * 0x1A8)));
+        }
         monster_size = emulator.ReadByte(Constants.GetAddress("MONSTER_SIZE"));
         foreach (int monster in Enumerable.Range(0, monster_size))
         {
-            monster_ID_list[monster] = emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (monster * 0x8));
-            monster_address_list[monster] = new MonsterAddress(m_point, monster, emulator);
+            monster_ID_list.Add(emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (monster * 0x8)));
+            monster_address_list[monster] = new MonsterAddress(m_point, monster, monster_ID_list[monster], monster_unique_ID_list, emulator);
         }
     }
 
@@ -153,6 +127,24 @@ public class Battle
         int[] og_def = { 0, 2 };
         int[] mdef = { 0, 2 };
         int[] og_mdef = { 0, 2 };
+        int[] spd = { 0, 2 };
+        int[] og_spd = { 0, 2 };
+        int[] turn = { 0, 2 };
+        int[] a_av = { 0, 1 };
+        int[] m_av = { 0, 1 };
+        int[] p_immune = { 0, 1 };
+        int[] m_immune = { 0, 1 };
+        int[] p_half = { 0, 1 };
+        int[] m_half = { 0, 1 };
+        int[] e_immune = { 0, 1 };
+        int[] e_half = { 0, 1 };
+        int[] stat_res = { 0, 1 };
+        int[] death_res = { 0, 1 };
+        int[] unique_index = { 0, 1 };
+        int[] exp = { 0, 2 };
+        int[] gold = { 0, 2 };
+        int[] drop_chance = { 0, 1 };
+        int[] drop_item = { 0, 2 };
         public Emulator emulator = null;
 
         public int[] HP { get { return hp; } }
@@ -167,8 +159,26 @@ public class Battle
         public int[] OG_DEF { get { return og_def; } }
         public int[] MDEF { get { return mdef; } }
         public int[] OG_MDEF { get { return og_mdef; } }
+        public int[] SPD { get { return spd; } }
+        public int[] OG_SPD { get { return og_spd; } }
+        public int[] Turn { get { return turn; } }
+        public int[] A_AV { get { return a_av; } }
+        public int[] M_AV { get { return m_av; } }
+        public int[] P_Immune { get { return p_immune; } }
+        public int[] M_Immune { get { return m_immune; } }
+        public int[] P_Half { get { return p_half; } }
+        public int[] M_Half { get { return m_half; } }
+        public int[] E_Immune { get { return e_immune; } }
+        public int[] E_Half { get { return e_half; } }
+        public int[] Stat_Res { get { return stat_res; } }
+        public int[] Death_Res { get { return death_res; } }
+        public int[] Unique_Index { get { return unique_index; } }
+        public int[] EXP { get { return exp; } }
+        public int[] Gold { get { return gold; } }
+        public int[] Drop_Chance { get { return drop_chance; } }
+        public int[] Drop_Item { get { return drop_item; } }
 
-        public MonsterAddress(int m_point, int monster, Emulator emu)
+        public MonsterAddress(int m_point, int monster, int ID, List<int> monster_unique_ID_list, Emulator emu)
         {
             emulator = emu;
             hp[0] = m_point - monster * 0x388;
@@ -183,6 +193,24 @@ public class Battle
             og_def[0] = m_point + 0x5E - monster * 0x388;
             mdef[0] = m_point + 0x32 - monster * 0x388;
             og_mdef[0] = m_point + 0x60 - monster * 0x388;
+            spd[0] = m_point + 0x2A - monster * 0x388;
+            og_spd[0] = m_point + 0x5C - monster * 0x388;
+            turn[0] = m_point + 0x44 - monster * 0x388;
+            a_av[0] = m_point + 0x38 - monster * 0x388;
+            m_av[0] = m_point + 0x3A - monster * 0x388;
+            p_immune[0] = m_point + 0x10 - monster * 0x388;
+            m_immune[0] = m_point + 0x10 - monster * 0x388;
+            p_half[0] = m_point + 0x10 - monster * 0x388;
+            m_half[0] = m_point + 0x10 - monster * 0x388;
+            e_immune[0] = m_point + 0x1A - monster * 0x388;
+            e_half[0] = m_point + 0x18 - monster * 0x388;
+            stat_res[0] = m_point + 0x1C - monster * 0x388;
+            death_res[0] = m_point + 0x0C - monster * 0x388;
+            unique_index[0] = m_point + 0x264 - monster * 0x388;
+            exp[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
+            gold[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x2 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
+            drop_chance[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
+            drop_item[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x5 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
         }
 
         public int ReadAddress(string attribute)
