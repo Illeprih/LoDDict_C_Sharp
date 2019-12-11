@@ -13,6 +13,11 @@ public class BattleCTRL
 {
     public static void Run(Emulator emulator)
     {
+        if (Globals.FIRST_RUN == true)
+        {
+            Globals.DICTIONARY = new LoDDict();
+            Globals.FIRST_RUN = false;
+        }
         int encounterValue = emulator.ReadShort(Constants.GetAddress("BATTLE_VALUE"));
         if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215)
         {
@@ -24,12 +29,42 @@ public class BattleCTRL
             Constants.WriteDebug("Monster IDs:        " + String.Join(", ", Globals.BATTLE.monster_ID_list.ToArray()));
             Constants.WriteDebug("Unique Monster Size:        " + Globals.BATTLE.unique_monster_size);
             Constants.WriteDebug("Unique Monster IDs:        " + String.Join(", ", Globals.BATTLE.monster_unique_ID_list.ToArray()));
-            Constants.WriteDebug("Monster 1 HP:        " + Globals.BATTLE.monster_address_list[0].ReadAddress("HP"));
-            Constants.WriteDebug("Monster 1 EXP:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("EXP"), 10));
-            Constants.WriteDebug("Monster 1 Gold:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Gold"), 10));
-            Constants.WriteDebug("Monster 1 Drop:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Drop_Item"), 10));
-            Constants.WriteDebug("Monster 1 Drop Chance:        " + Convert.ToString(Globals.BATTLE.monster_address_list[0].ReadAddress("Drop_Chance"), 10));
             Globals.STATS_CHANGED = true;
+            Constants.WriteOutput("Addresses loaded, Changing stats...");
+            for (int monster = 0; monster < Globals.BATTLE.monster_size; monster++)
+            {
+                int ID = Globals.BATTLE.monster_ID_list[monster];
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("HP", Globals.DICTIONARY.StatList[ID].HP);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("Max_HP", Globals.DICTIONARY.StatList[ID].HP);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("ATK", Globals.DICTIONARY.StatList[ID].ATK);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_ATK", Globals.DICTIONARY.StatList[ID].ATK);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("MAT", Globals.DICTIONARY.StatList[ID].MAT);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MAT", Globals.DICTIONARY.StatList[ID].MAT);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("DEF", Globals.DICTIONARY.StatList[ID].DEF);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_DEF", Globals.DICTIONARY.StatList[ID].DEF);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("SPD", Globals.DICTIONARY.StatList[ID].SPD);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_SPD", Globals.DICTIONARY.StatList[ID].SPD);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("A_AV", Globals.DICTIONARY.StatList[ID].A_AV);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_AV", Globals.DICTIONARY.StatList[ID].M_AV);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Immune", Globals.DICTIONARY.StatList[ID].P_Immune);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Immune", Globals.DICTIONARY.StatList[ID].M_Immune);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Half", Globals.DICTIONARY.StatList[ID].P_Half);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Half", Globals.DICTIONARY.StatList[ID].M_Half);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Immune", Globals.DICTIONARY.StatList[ID].E_Immune);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Half", Globals.DICTIONARY.StatList[ID].E_Half);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("Stat_Res", Globals.DICTIONARY.StatList[ID].Stat_Res);
+                Globals.BATTLE.monster_address_list[monster].WriteAddress("Death_Res", Globals.DICTIONARY.StatList[ID].Death_Res);
+            }
+            for (int monster = 0; monster < Globals.BATTLE.unique_monster_size; monster++)
+            {
+                int ID = Globals.BATTLE.monster_unique_ID_list[monster];
+                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].EXP);
+                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + 0x2 + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].Gold);
+                emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster * 0x8, (byte)Globals.DICTIONARY.StatList[ID].Drop_Chance);
+                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + 0x5 + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].Drop_Item);
+            }
             Constants.WriteOutput("Finished loading.");
         }
         else
@@ -74,7 +109,7 @@ public class Battle
     public int unique_monster_size = 1;
     public List<int> monster_ID_list = new List<int>();
     public List<int> monster_unique_ID_list = new List<int>();
-    public dynamic[] monster_address_list = new dynamic[5];
+    public List<dynamic> monster_address_list = new List<dynamic>();
 
     public Battle(Emulator emulator)
     {
@@ -97,7 +132,7 @@ public class Battle
         foreach (int monster in Enumerable.Range(0, monster_size))
         {
             monster_ID_list.Add(emulator.ReadShort(Constants.GetAddress("MONSTER_ID") + GetOffset() + (monster * 0x8)));
-            monster_address_list[monster] = new MonsterAddress(m_point, monster, monster_ID_list[monster], monster_unique_ID_list, emulator);
+            monster_address_list.Add(new MonsterAddress(m_point, monster, monster_ID_list[monster], monster_unique_ID_list, emulator));
         }
     }
 
@@ -343,6 +378,7 @@ public class LoDDict
     }
     public LoDDict(string path)
     {
+        string cwd = AppDomain.CurrentDomain.BaseDirectory;
         string[] lines = File.ReadAllLines(path + "/Item_List.txt");
         var i = 0;
         foreach (string row in lines)
@@ -407,10 +443,10 @@ public class StatList
     string name = "Monster";
     int element = 128;
     int hp = 0;
-    int at = 0;
+    int atk = 0;
     int mat = 0;
-    int df = 0;
-    int mdf = 0;
+    int def = 0;
+    int mdef = 0;
     int spd = 0;
     int a_av = 0;
     int m_av = 0;
@@ -420,7 +456,7 @@ public class StatList
     int m_half = 0;
     int e_immune = 0;
     int e_half = 0;
-    int status_res = 0;
+    int stat_res = 0;
     int death_res = 0;
     int exp = 0;
     int gold = 0;
@@ -430,10 +466,10 @@ public class StatList
     public string Name { get { return name; } }
     public int Element { get { return element; } }
     public int HP { get { return hp; } }
-    public int AT { get { return at; } }
+    public int ATK { get { return atk; } }
     public int MAT { get { return mat; } }
-    public int DF { get { return df; } }
-    public int MDF { get { return mdf; } }
+    public int DEF { get { return def; } }
+    public int MDEF { get { return mdef; } }
     public int SPD { get { return spd; } }
     public int A_AV { get { return a_av; } }
     public int M_AV { get { return m_av; } }
@@ -443,7 +479,7 @@ public class StatList
     public int M_Half { get { return m_half; } }
     public int E_Immune { get { return e_immune; } }
     public int E_Half { get { return e_half; } }
-    public int Status_Res { get { return status_res; } }
+    public int Stat_Res { get { return stat_res; } }
     public int Death_Res { get { return death_res; } }
     public int EXP { get { return exp; } }
     public int Gold { get { return gold; } }
@@ -455,10 +491,10 @@ public class StatList
         name = monster[1];
         element = element2num[monster[2]];
         hp = Int32.Parse(monster[3]);
-        at = Int32.Parse(monster[4]);
+        atk = Int32.Parse(monster[4]);
         mat = Int32.Parse(monster[5]);
-        df = Int32.Parse(monster[6]);
-        mdf = Int32.Parse(monster[7]);
+        def = Int32.Parse(monster[6]);
+        mdef = Int32.Parse(monster[7]);
         spd = Int32.Parse(monster[8]);
         a_av = Int32.Parse(monster[9]);
         m_av = Int32.Parse(monster[10]);
@@ -468,7 +504,7 @@ public class StatList
         m_half = Int32.Parse(monster[14]);
         e_immune = element2num[monster[15]];
         e_half = element2num[monster[16]];
-        status_res = Int32.Parse(monster[17]);
+        stat_res = Int32.Parse(monster[17]);
         death_res = Int32.Parse(monster[18]);
         exp = Int32.Parse(monster[19]);
         gold = Int32.Parse(monster[20]);
@@ -481,19 +517,19 @@ public class DragoonStats
 {
     int dat = 0;
     int dmat = 0;
-    int ddf = 0;
-    int dmdf = 0;
+    int ddef = 0;
+    int dmdef = 0;
 
     public int DAT { get { return dat; } }
     public int DMAT { get { return dmat; } }
-    public int DDF { get { return ddf; } }
-    public int DMDF { get { return dmdf; } }
+    public int DDEF { get { return ddef; } }
+    public int DMDEF { get { return dmdef; } }
 
-    public DragoonStats(int ndat, int ndmat, int nddf, int ndmdf)
+    public DragoonStats(int ndat, int ndmat, int nddef, int ndmdef)
     {
         dat = ndat;
         dmat = ndmat;
-        ddf = nddf;
-        dmdf = ndmdf;
+        ddef = nddef;
+        dmdef = ndmdef;
     }
 }
