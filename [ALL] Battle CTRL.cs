@@ -13,10 +13,14 @@ public class BattleCTRL
 {
     public static void Run(Emulator emulator)
     {
+        bool monster_change = true;
+        bool drop_change = true;
+        bool drop_defined = true;
         if (Globals.FIRST_RUN == true)
         {
             Globals.DICTIONARY = new LoDDict();
             Globals.FIRST_RUN = false;
+            
         }
         int encounterValue = emulator.ReadShort(Constants.GetAddress("BATTLE_VALUE"));
         if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215)
@@ -31,40 +35,64 @@ public class BattleCTRL
             Constants.WriteDebug("Unique Monster IDs:        " + String.Join(", ", Globals.BATTLE.monster_unique_ID_list.ToArray()));
             Globals.STATS_CHANGED = true;
             Constants.WriteOutput("Addresses loaded, Changing stats...");
-            for (int monster = 0; monster < Globals.BATTLE.monster_size; monster++)
+            if (monster_change == true)
             {
-                int ID = Globals.BATTLE.monster_ID_list[monster];
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("HP", Globals.DICTIONARY.StatList[ID].HP);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("Max_HP", Globals.DICTIONARY.StatList[ID].HP);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("ATK", Globals.DICTIONARY.StatList[ID].ATK);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_ATK", Globals.DICTIONARY.StatList[ID].ATK);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("MAT", Globals.DICTIONARY.StatList[ID].MAT);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MAT", Globals.DICTIONARY.StatList[ID].MAT);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("DEF", Globals.DICTIONARY.StatList[ID].DEF);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_DEF", Globals.DICTIONARY.StatList[ID].DEF);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("SPD", Globals.DICTIONARY.StatList[ID].SPD);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_SPD", Globals.DICTIONARY.StatList[ID].SPD);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("A_AV", Globals.DICTIONARY.StatList[ID].A_AV);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_AV", Globals.DICTIONARY.StatList[ID].M_AV);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Immune", Globals.DICTIONARY.StatList[ID].P_Immune);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Immune", Globals.DICTIONARY.StatList[ID].M_Immune);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Half", Globals.DICTIONARY.StatList[ID].P_Half);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Half", Globals.DICTIONARY.StatList[ID].M_Half);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Immune", Globals.DICTIONARY.StatList[ID].E_Immune);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Half", Globals.DICTIONARY.StatList[ID].E_Half);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("Stat_Res", Globals.DICTIONARY.StatList[ID].Stat_Res);
-                Globals.BATTLE.monster_address_list[monster].WriteAddress("Death_Res", Globals.DICTIONARY.StatList[ID].Death_Res);
+                for (int monster = 0; monster < Globals.BATTLE.monster_size; monster++)
+                {
+                    int ID = Globals.BATTLE.monster_ID_list[monster];
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("HP", Globals.DICTIONARY.StatList[ID].HP);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("Max_HP", Globals.DICTIONARY.StatList[ID].HP);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("ATK", Globals.DICTIONARY.StatList[ID].ATK);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_ATK", Globals.DICTIONARY.StatList[ID].ATK);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("MAT", Globals.DICTIONARY.StatList[ID].MAT);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MAT", Globals.DICTIONARY.StatList[ID].MAT);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("DEF", Globals.DICTIONARY.StatList[ID].DEF);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_DEF", Globals.DICTIONARY.StatList[ID].DEF);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_MDEF", Globals.DICTIONARY.StatList[ID].MDEF);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("SPD", Globals.DICTIONARY.StatList[ID].SPD);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("OG_SPD", Globals.DICTIONARY.StatList[ID].SPD);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("A_AV", Globals.DICTIONARY.StatList[ID].A_AV);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("M_AV", Globals.DICTIONARY.StatList[ID].M_AV);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Immune", Globals.DICTIONARY.StatList[ID].P_Immune);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Immune", Globals.DICTIONARY.StatList[ID].M_Immune);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("P_Half", Globals.DICTIONARY.StatList[ID].P_Half);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("M_Half", Globals.DICTIONARY.StatList[ID].M_Half);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Immune", Globals.DICTIONARY.StatList[ID].E_Immune);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("E_Half", Globals.DICTIONARY.StatList[ID].E_Half);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("Stat_Res", Globals.DICTIONARY.StatList[ID].Stat_Res);
+                    Globals.BATTLE.monster_address_list[monster].WriteAddress("Death_Res", Globals.DICTIONARY.StatList[ID].Death_Res);
+                }
             }
-            for (int monster = 0; monster < Globals.BATTLE.unique_monster_size; monster++)
-            {
-                int ID = Globals.BATTLE.monster_unique_ID_list[monster];
-                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].EXP);
-                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + 0x2 + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].Gold);
-                emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster * 0x8, (byte)Globals.DICTIONARY.StatList[ID].Drop_Chance);
-                emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + 0x5 + (int)Constants.OFFSET + monster * 0x8, (ushort)Globals.DICTIONARY.StatList[ID].Drop_Item);
-            }
+           if (drop_change == true)
+           {
+                if (drop_defined == true)
+                {
+                    for (int monster = 0; monster < Globals.BATTLE.unique_monster_size; monster++)
+                    {
+                        int ID = Globals.BATTLE.monster_unique_ID_list[monster];
+                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster * 0x1A8, (ushort) Globals.DICTIONARY.StatList[ID].EXP);
+                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x2  + monster * 0x1A8, (ushort) Globals.DICTIONARY.StatList[ID].Gold);
+                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x4 + monster * 0x1A8, (byte) Globals.DICTIONARY.StatList[ID].Drop_Chance);
+                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x5 + monster * 0x1A8, (byte) Globals.DICTIONARY.StatList[ID].Drop_Item);
+                        Constants.WriteDebug(Convert.ToString(ID, 10) + " Drop: " + (int)Globals.DICTIONARY.StatList[ID].Drop_Item);
+                    }
+                }
+                else
+                {
+                    for (int monster = 0; monster < Globals.BATTLE.unique_monster_size; monster++)
+                    {
+                        int ID = Globals.BATTLE.monster_unique_ID_list[monster];
+                        int[] boss = { 325, 301, 287, 266, 300 };
+                        if (boss.Contains(ID))
+                        {
+                            emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster * 0x8, (byte) 100);
+                        }
+                    }
+                }
+                
+           }
+            
             Constants.WriteOutput("Finished loading.");
         }
         else
@@ -122,11 +150,12 @@ public class Battle
             m_point = 0x1A43B4 + emulator.ReadShort(Constants.GetAddress("M_POINT")) + (int)Constants.OFFSET;
         }
         c_point = (int)(emulator.ReadInteger(Constants.GetAddress("C_POINT")) - 0x7F5A8558);
-        Thread.Sleep(1000);
+        Thread.Sleep(5000);
         unique_monster_size = emulator.ReadByte(Constants.GetAddress("UNIQUE_MONSTERS"));
-        foreach (int monster in Enumerable.Range(0, unique_monster_size))
+        for (int monster = 0; monster < unique_monster_size; monster++)
         {
-            monster_unique_ID_list.Add(emulator.ReadShort(Constants.GetAddress("UNIQUE_SLOT") + (monster * 0x1A8)));
+            monster_unique_ID_list.Add(emulator.ReadShortU(Constants.GetAddress("UNIQUE_SLOT") + (int)Constants.OFFSET + (monster * 0x1A8)));
+            Constants.WriteDebug("Unique Slot:        " + Convert.ToString(Constants.GetAddress("UNIQUE_SLOT") + (int)Constants.OFFSET + (monster * 0x2C8), 16).ToUpper());
         }
         monster_size = emulator.ReadByte(Constants.GetAddress("MONSTER_SIZE"));
         foreach (int monster in Enumerable.Range(0, monster_size))
@@ -323,13 +352,11 @@ public class LoDDict
         var i = 0;
         foreach (string row in lines)
         {
-            if (i > 0)
+            
+            if (row != "")
             {
-                if (row != "")
-                {
-                    item2num.Add(row, i - 1);
-                    num2item.Add(i - 1, row);
-                }
+                item2num.Add(row, i);
+                num2item.Add(i, row);
             }
             i++;
         }
