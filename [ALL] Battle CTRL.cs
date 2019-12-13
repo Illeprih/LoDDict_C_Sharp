@@ -13,14 +13,14 @@ public class BattleCTRL
 {
     public static void Run(Emulator emulator)
     {
-        bool monster_change = true;
-        bool drop_change = true;
+        bool monster_change = false;
+        bool drop_change = false;
         bool drop_defined = true;
         if (Globals.FIRST_RUN == true)
         {
             Globals.DICTIONARY = new LoDDict();
             Globals.FIRST_RUN = false;
-            
+
         }
         int encounterValue = emulator.ReadShort(Constants.GetAddress("BATTLE_VALUE"));
         if (Globals.IN_BATTLE && !Globals.STATS_CHANGED && encounterValue == 41215)
@@ -64,17 +64,17 @@ public class BattleCTRL
                     Globals.BATTLE.monster_address_list[monster].WriteAddress("Death_Res", Globals.DICTIONARY.StatList[ID].Death_Res);
                 }
             }
-           if (drop_change == true)
-           {
+            if (drop_change == true)
+            {
                 if (drop_defined == true)
                 {
                     for (int monster = 0; monster < Globals.BATTLE.unique_monster_size; monster++)
                     {
                         int ID = Globals.BATTLE.monster_unique_ID_list[monster];
-                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster * 0x1A8, (ushort) Globals.DICTIONARY.StatList[ID].EXP);
-                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x2  + monster * 0x1A8, (ushort) Globals.DICTIONARY.StatList[ID].Gold);
-                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x4 + monster * 0x1A8, (byte) Globals.DICTIONARY.StatList[ID].Drop_Chance);
-                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x5 + monster * 0x1A8, (byte) Globals.DICTIONARY.StatList[ID].Drop_Item);
+                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster * 0x1A8, (ushort)Globals.DICTIONARY.StatList[ID].EXP);
+                        emulator.WriteShortU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x2 + monster * 0x1A8, (ushort)Globals.DICTIONARY.StatList[ID].Gold);
+                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x4 + monster * 0x1A8, (byte)Globals.DICTIONARY.StatList[ID].Drop_Chance);
+                        emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x5 + monster * 0x1A8, (byte)Globals.DICTIONARY.StatList[ID].Drop_Item);
                         Constants.WriteDebug(Convert.ToString(ID, 10) + " Drop: " + (int)Globals.DICTIONARY.StatList[ID].Drop_Item);
                     }
                 }
@@ -86,13 +86,25 @@ public class BattleCTRL
                         int[] boss = { 325, 301, 287, 266, 300 };
                         if (boss.Contains(ID))
                         {
-                            emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster * 0x8, (byte) 100);
+                            emulator.WriteByteU(Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster * 0x8, (byte)100);
                         }
                     }
                 }
-                
-           }
-            
+                foreach (int monster in Globals.BATTLE.monster_unique_ID_list)
+                {
+                    int index = Globals.BATTLE.monster_ID_list.IndexOf(monster);
+                    Constants.WriteDebug("Monster: " + Convert.ToString(monster, 10)
+                        + "\nA_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("A_AV"), 10) + "\t\tM_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_AV"), 10)
+                        + "\t\tP_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Immune"), 10) + "\t\tM_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Immune"), 10)
+                        + "\t\tP_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Half"), 10) + "\t\tM_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Half"), 10)
+                        + "\t\tE_Immune: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Immune")] + "\t\tE_Half: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Half")]
+                        + "\t\tStatus_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Stat_Res"), 10) + "\t\tDeath_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Death_Res"), 10)
+                        + "\nEXP: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("EXP"), 10) + "\t\tGold: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Gold"), 10)
+                        + "\t\tItem: " + Globals.DICTIONARY.Num2Item[Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Item")] + "\t\tDrop Chance: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Chance"), 10));
+                }
+
+            }
+
             Constants.WriteOutput("Finished loading.");
         }
         else
@@ -208,7 +220,7 @@ public class Battle
         int[] exp = { 0, 2 };
         int[] gold = { 0, 2 };
         int[] drop_chance = { 0, 1 };
-        int[] drop_item = { 0, 2 };
+        int[] drop_item = { 0, 1 };
         public Emulator emulator = null;
 
         public int[] HP { get { return hp; } }
@@ -262,19 +274,19 @@ public class Battle
             turn[0] = m_point + 0x44 - monster * 0x388;
             a_av[0] = m_point + 0x38 - monster * 0x388;
             m_av[0] = m_point + 0x3A - monster * 0x388;
-            p_immune[0] = m_point + 0x10 - monster * 0x388;
-            m_immune[0] = m_point + 0x10 - monster * 0x388;
-            p_half[0] = m_point + 0x10 - monster * 0x388;
-            m_half[0] = m_point + 0x10 - monster * 0x388;
+            p_immune[0] = m_point + 0x108 - monster * 0x388;
+            m_immune[0] = m_point + 0x10A - monster * 0x388;
+            p_half[0] = m_point + 0x10C - monster * 0x388;
+            m_half[0] = m_point + 0x10E - monster * 0x388;
             e_immune[0] = m_point + 0x1A - monster * 0x388;
             e_half[0] = m_point + 0x18 - monster * 0x388;
             stat_res[0] = m_point + 0x1C - monster * 0x388;
-            death_res[0] = m_point + 0x0C - monster * 0x388;
+            death_res[0] = m_point + 0xC - monster * 0x388;
             unique_index[0] = m_point + 0x264 - monster * 0x388;
-            exp[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
-            gold[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x2 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
-            drop_chance[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x4 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
-            drop_item[0] = Constants.GetAddress("MONSTER_REWARDS") + 0x5 + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x8;
+            exp[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + monster_unique_ID_list.IndexOf(ID) * 0x1A8;
+            gold[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x2 + monster_unique_ID_list.IndexOf(ID) * 0x1A8;
+            drop_chance[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x4 + monster_unique_ID_list.IndexOf(ID) * 0x1A8;
+            drop_item[0] = Constants.GetAddress("MONSTER_REWARDS") + (int)Constants.OFFSET + 0x5 + monster_unique_ID_list.IndexOf(ID) * 0x1A8;
         }
 
         public int ReadAddress(string attribute)
@@ -352,7 +364,7 @@ public class LoDDict
         var i = 0;
         foreach (string row in lines)
         {
-            
+
             if (row != "")
             {
                 item2num.Add(row, i);
