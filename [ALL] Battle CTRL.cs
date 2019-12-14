@@ -18,7 +18,7 @@ public class BattleCTRL
         bool drop_defined = true;
         if (Globals.FIRST_RUN == true)
         {
-            Globals.DICTIONARY = new LoDDict();
+            Globals.DICTIONARY = new LoDDict("Base");
             Globals.FIRST_RUN = false;
 
         }
@@ -90,21 +90,21 @@ public class BattleCTRL
                         }
                     }
                 }
-                foreach (int monster in Globals.BATTLE.monster_unique_ID_list)
-                {
-                    int index = Globals.BATTLE.monster_ID_list.IndexOf(monster);
-                    Constants.WriteDebug("Monster: " + Convert.ToString(monster, 10)
-                        + "\nA_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("A_AV"), 10) + "\t\tM_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_AV"), 10)
-                        + "\t\tP_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Immune"), 10) + "\t\tM_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Immune"), 10)
-                        + "\t\tP_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Half"), 10) + "\t\tM_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Half"), 10)
-                        + "\t\tE_Immune: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Immune")] + "\t\tE_Half: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Half")]
-                        + "\t\tStatus_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Stat_Res"), 10) + "\t\tDeath_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Death_Res"), 10)
-                        + "\nEXP: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("EXP"), 10) + "\t\tGold: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Gold"), 10)
-                        + "\t\tItem: " + Globals.DICTIONARY.Num2Item[Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Item")] + "\t\tDrop Chance: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Chance"), 10));
-                }
+                
 
             }
-
+            foreach (int monster in Globals.BATTLE.monster_unique_ID_list)
+            {
+                int index = Globals.BATTLE.monster_ID_list.IndexOf(monster);
+                Constants.WriteDebug("Monster: " + Globals.DICTIONARY.StatList[monster].Name
+                    + "\nA_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("A_AV"), 10) + "\t\tM_AV: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_AV"), 10)
+                    + "\t\tP_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Immune"), 10) + "\t\tM_Immune: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Immune"), 10)
+                    + "\t\tP_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("P_Half"), 10) + "\t\tM_Half: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("M_Half"), 10)
+                    + "\t\tE_Immune: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Immune")] + "\t\tE_Half: " + Globals.DICTIONARY.Num2Element[Globals.BATTLE.monster_address_list[index].ReadAddress("E_Half")]
+                    + "\t\tStatus_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Stat_Res"), 10) + "\t\tDeath_Resist: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Death_Res"), 10)
+                    + "\nEXP: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("EXP"), 10) + "\t\tGold: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Gold"), 10)
+                    + "\t\tItem: " + Globals.DICTIONARY.Num2Item[Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Item")] + "\t\tDrop Chance: " + Convert.ToString(Globals.BATTLE.monster_address_list[index].ReadAddress("Drop_Chance"), 10));
+            }
             Constants.WriteOutput("Finished loading.");
         }
         else
@@ -415,24 +415,21 @@ public class LoDDict
             }
         }
     }
-    public LoDDict(string path)
+    public LoDDict(string folder)
     {
         string cwd = AppDomain.CurrentDomain.BaseDirectory;
-        string[] lines = File.ReadAllLines(path + "/Item_List.txt");
+        string[] lines = File.ReadAllLines(cwd + "Mods/" + folder + "/Item_List.txt");
         var i = 0;
         foreach (string row in lines)
         {
-            if (i > 0)
+            if (row != "")
             {
-                if (row != "")
-                {
-                    item2num.Add(row, i - 1);
-                    num2item.Add(i - 1, row);
-                }
+                item2num.Add(row, i);
+                num2item.Add(i, row);
             }
             i++;
         }
-        using (var monsterData = new StreamReader(path + "/Monster_Data.csv"))
+        using (var monsterData = new StreamReader(cwd + "Mods/" + folder + "/Monster_Data.csv"))
         {
             bool firstline = true;
             while (!monsterData.EndOfStream)
@@ -449,7 +446,7 @@ public class LoDDict
                 }
             }
         }
-        using (var dragoon = new StreamReader(path + "/Dragoon_Stats.csv"))
+        using (var dragoon = new StreamReader(cwd + "Mods/" + folder + "/Dragoon_Stats.csv"))
         {
             bool firstline = true;
             i = 0;
